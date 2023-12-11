@@ -27,6 +27,7 @@ export default class InstanceConfig {
   public processType: ProcessType = "general";
   public updateCommand: string = "";
   public crlf = os.platform() === "win32" ? 2 : 1; // 1: \n  2: \r\n
+  public onDemand = false;
 
   // custom command list
   public actionCommandList: IActionCommand[] = [];

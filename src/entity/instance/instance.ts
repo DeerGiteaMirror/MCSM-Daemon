@@ -35,6 +35,7 @@ export default class Instance extends EventEmitter {
   public static readonly STATUS_STOPPING = 1;
   public static readonly STATUS_STARTING = 2;
   public static readonly STATUS_RUNNING = 3;
+  public static readonly STATUS_SLEEPING = 4;
 
   public static readonly TYPE_UNIVERSAL = "universal";
   public static readonly TYPE_MINECRAFT_JAVA = "minecraft/java";
@@ -126,6 +127,7 @@ export default class Instance extends EventEmitter {
     configureEntityParams(this.config, cfg, "endTime", String);
     configureEntityParams(this.config, cfg, "fileCode", String);
     configureEntityParams(this.config, cfg, "updateCommand", String);
+    configureEntityParams(this.config, cfg, "onDemand", Boolean);
     if (cfg.docker) {
       configureEntityParams(this.config.docker, cfg.docker, "containerName", String);
       configureEntityParams(this.config.docker, cfg.docker, "image", String);
