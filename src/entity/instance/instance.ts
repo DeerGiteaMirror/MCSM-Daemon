@@ -314,4 +314,39 @@ export default class Instance extends EventEmitter {
   clearPreset() {
     this.presetCommandManager.clearPreset();
   }
+
+  isRunningOnDemand() {
+    // todo 根据定时任务是否存在判断
+  }
+
+  async runOnDemand(source = "Unknown") {
+    // todo 启动一个定时检查 
+
+    // 1. 首先启动服务器
+    //      this.execPreset("start", source);
+
+    // 2. 从获取配置文件端口
+    //    1) 如果端口不存在，直接直接返回
+    
+    // 3. 创建一个定时循环检查任务 
+    //    1) 每分钟检查一次，如果连续30次没有玩家，就关闭服务器（进入休眠状态）
+    //        this.execPreset("stop", source);
+    //        this.instanceStatus = Instance.STATUS_SLEEPING;
+
+    //    2) 在相同的端口启动一个 socket 服务器，用于接收请求
+
+    //    3) 如果接收到请求，关闭 socket 服务器
+    
+    //    4) 启动服务器
+    //        this.execPreset("start", source);
+  }
+
+  async stopOnDemand() {
+    // todo 关闭定时任务
+    //    1) 如果定时任务不存在，直接返回
+    //    2) 如果定时任务存在，关闭定时任务
+    //        1> 如果 socket 服务器存在，关闭 socket 服务器
+    //        2> 如果服务器正在运行，关闭服务器
+    //            this.execPreset("stop", source);
+  }
 }
