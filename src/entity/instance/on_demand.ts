@@ -21,7 +21,7 @@ export class OnDemandRunner {
                 while (this.running) {
                     this.instance.execPreset("start", "OnDemandRunner");
                     if (port <= 0 || this.instance.config.pingConfig.ip === "") {
-                        logger.console.warn(`${this.instance.instanceUuid} `, $t("on_demand.startInstance"));
+                        logger.warn(`${this.instance.instanceUuid} `, $t("on_demand.startInstance"));
                         this.running = false;
                         break;
                     }
