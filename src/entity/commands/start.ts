@@ -54,7 +54,7 @@ export default class StartCommand extends InstanceCommand {
       // prevent the dead-loop from starting
       await this.sleep();
 
-      if (instance.config.onDemand) {
+      if (instance.config.onDemand && instance.config.type != Instance.TYPE_UNIVERSAL) {
         return await instance.runOnDemand(this.source);
       } else {
         return await instance.execPreset("start", this.source);

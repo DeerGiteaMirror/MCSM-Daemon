@@ -17,6 +17,7 @@ import StartCommand from "../commands/start";
 import { configureEntityParams } from "../../common/typecheck";
 import { PTY_PATH } from "../../const";
 import { OpenFrp } from "../commands/task/openfrp";
+import { OnDemandRunner } from "./on_demand";
 
 // The instance does not need to store additional information persistently
 interface IInstanceInfo {
@@ -51,6 +52,8 @@ export default class Instance extends EventEmitter {
 
   public readonly lifeCycleTaskManager = new LifeCycleTaskManager(this);
   public readonly presetCommandManager = new PresetCommandManager(this);
+
+  public onDemandRunner: OnDemandRunner = null;
 
   public config: InstanceConfig;
 
@@ -317,36 +320,43 @@ export default class Instance extends EventEmitter {
 
   isRunningOnDemand() {
     // todo 根据定时任务是否存在判断
+    if (this.onDemandRunner && this.onDemandRunner.isRunning()) {
+      return true;
+    }
+    return false;
   }
 
   async runOnDemand(source = "Unknown") {
-    // todo 启动一个定时检查 
-
-    // 1. 首先启动服务器
-    //      this.execPreset("start", source);
-
-    // 2. 从获取配置文件端口
-    //    1) 如果端口不存在，直接直接返回
-    
-    // 3. 创建一个定时循环检查任务 
-    //    1) 每分钟检查一次，如果连续30次没有玩家，就关闭服务器（进入休眠状态）
-    //        this.execPreset("stop", source);
-    //        this.instanceStatus = Instance.STATUS_SLEEPING;
-
-    //    2) 在相同的端口启动一个 socket 服务器，用于接收请求
-
-    //    3) 如果接收到请求，关闭 socket 服务器
-    
-    //    4) 启动服务器
-    //        this.execPreset("start", source);
+    this.onDemandRunner = new OnDemandRunner(this);
+    this.onDemandRunner.run(this.getMinecraftPort());
   }
 
   async stopOnDemand() {
-    // todo 关闭定时任务
     //    1) 如果定时任务不存在，直接返回
     //    2) 如果定时任务存在，关闭定时任务
     //        1> 如果 socket 服务器存在，关闭 socket 服务器
     //        2> 如果服务器正在运行，关闭服务器
     //            this.execPreset("stop", source);
+    if (!this.onDemandRunner) {
+      if (this.instanceStatus === Instance.STATUS_RUNNING) this.execPreset("stop", "OnDemandRunner");
+      return 0;
+    }
+    this.onDemandRunner.stop();
+    this.onDemandRunner = null;
+  }
+
+  // get minecraft server port from server.properties
+  getMinecraftPort() {
+    const portFile = path.join(this.absoluteCwdPath(), "server.properties");
+    const portFileContent = fs.readFileSync(portFile, "utf-8");
+    if (!portFileContent) return 0;
+    const port = portFileContent.match(/server-port=(\d+)/)?.[1];
+    if (port) {
+      this.config.pingConfig.port = Number(port);
+      this.config.pingConfig.ip = "localhost";
+      StorageSubsystem.store("InstanceConfig", this.instanceUuid, this.config);
+      return Number(port);
+    }
+    return 0;
   }
 }
