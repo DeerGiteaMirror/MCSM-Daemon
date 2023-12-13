@@ -228,6 +228,7 @@
     "cantStartOnDemand": "May not a Minecraft server, unable to start on demand.",
     "over30minClose": "Instance has been vancant for more than 30 minutes, going to sleep...",
     "instanceSleeping": "Instance is sleeping, waiting for player to wake it up.",
+    "playerConnected": "Connection recived, waking up instance...",
     "start": "On demand sequence started.",
     "stop": "On demand sequence stopped."
   }

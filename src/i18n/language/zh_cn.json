@@ -228,6 +228,7 @@
     "cantStartOnDemand": "可能由于不是Minecraft服务器，无法使用按需启动功能。",
     "over30minClose": "实例超过30分钟不活跃，正在进入休眠状态。",
     "instanceSleeping": "实例已休眠，等待玩家唤醒。",
+    "playerConnected": "检测到连接请求，正在唤醒实例。",
     "start": "已进入按需启动模式，实例将在超过30分钟不活跃后自动关闭并在玩家进入时自动开启。",
     "stop": "已退出按需启动模式。"
   }

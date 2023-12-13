@@ -67,14 +67,13 @@ export class OnDemandRunner {
                     // create socket server
                     this.socketServer = this.startSocketServer(port);
                     // waiting for player connect then close socket server
-                    await new Promise<void>((ok, reject) => {
-                        this.socketServer.on('close', () => {
-                            ok();
+                    while (this.socketServer.listening) {
+                        await new Promise<void>((ok) => {
+                            setTimeout(ok, 2000);
                         });
-                        this.socketServer.on('error', (error: any) => {
-                            reject(error);
-                        });
-                    });
+                    }
+                    logger.info(`${this.instance.instanceUuid} `, $t("on_demand.playerConnected"));
+                    this.instance.println("INFO", $t("on_demand.playerConnected"));
                     this.socketServer = null;
                 }
                 resolve();
