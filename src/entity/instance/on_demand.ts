@@ -14,7 +14,8 @@ export class OnDemandRunner {
     }
 
     public async run(port: number) {
-        logger.info(`${this.instance.instanceUuid} OnDemandRunner started.`);
+        logger.info(`${this.instance.instanceUuid} `, $t("on_demand.start"));
+        this.instance.println("INFO", $t("on_demand.start"));
         this.running = true;
         return new Promise<void>(async (resolve, reject) => {
             try {
@@ -92,6 +93,8 @@ export class OnDemandRunner {
             this.instance.execPreset("stop", "OnDemandRunner");
         }
         this.instance.stopped();
+        this.instance.println("INFO", $t("on_demand.stop"));
+        logger.info(`${this.instance.instanceUuid} `, $t("on_demand.stop"));
     }
 
     private startSocketServer(port: number) {
