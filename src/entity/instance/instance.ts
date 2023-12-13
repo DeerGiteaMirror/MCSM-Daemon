@@ -331,12 +331,7 @@ export default class Instance extends EventEmitter {
     this.onDemandRunner.run(this.getMinecraftPort());
   }
 
-  async stopOnDemand() {
-    //    1) 如果定时任务不存在，直接返回
-    //    2) 如果定时任务存在，关闭定时任务
-    //        1> 如果 socket 服务器存在，关闭 socket 服务器
-    //        2> 如果服务器正在运行，关闭服务器
-    //            this.execPreset("stop", source);
+  async stopOnDemand() {;
     if (!this.onDemandRunner) {
       if (this.instanceStatus === Instance.STATUS_RUNNING) this.execPreset("stop", "OnDemandRunner");
       return 0;

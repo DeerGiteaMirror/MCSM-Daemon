@@ -91,6 +91,7 @@ export class OnDemandRunner {
         if (this.instance.instanceStatus === Instance.STATUS_RUNNING) {
             this.instance.execPreset("stop", "OnDemandRunner");
         }
+        this.instance.stopped();
     }
 
     private startSocketServer(port: number) {

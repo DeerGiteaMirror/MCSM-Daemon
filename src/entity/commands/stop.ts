@@ -14,7 +14,7 @@ export default class StopCommand extends InstanceCommand {
     if (instance.config.eventTask && instance.config.eventTask.autoRestart) instance.config.eventTask.ignore = true;
 
     // send stop command
-    if (instance.isRunningOnDemand) {
+    if (instance.isRunningOnDemand()) {
       return await instance.stopOnDemand();
     } else {
       return await instance.execPreset("stop");
