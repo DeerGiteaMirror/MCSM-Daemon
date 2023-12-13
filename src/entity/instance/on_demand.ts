@@ -27,11 +27,11 @@ export class OnDemandRunner {
                     }
                     this.count = 0;
                     while (this.running) {
-                        // 等待 1 分钟
+                        // waiting for 1 min
                         await new Promise<void>((ok) => {
                             setTimeout(ok, 1000 * 60);
                         });
-                        // todo 检查玩家数量
+                        // check if player online
                         const playerCount = this.instance.info.currentPlayers;
                         if (playerCount > 0) {
                             this.count = 0;
@@ -45,23 +45,27 @@ export class OnDemandRunner {
                     if (!this.running) {
                         break;
                     }
-                    // 关闭服务器 over30minClose
+                    // stop instance after 30 min no player
                     logger.info(`${this.instance.instanceUuid} `, $t("on_demand.over30minClose"));
                     this.instance.println("INFO", $t("on_demand.over30minClose"));
                     await this.instance.execPreset("stop", "OnDemandRunner");
 
-                    // 等待服务器状态变为停止
+                    // waiting for instance stop
                     while (this.instance.instanceStatus !== Instance.STATUS_STOP) {
+                        // if stop faild and instance returning to running status try to kill it
+                        if (this.instance.instanceStatus === Instance.STATUS_RUNNING) {
+                            await this.instance.execPreset("kill", "OnDemandRunner");
+                        }
                         await new Promise<void>((ok) => {
-                            setTimeout(ok, 1000);
+                            setTimeout(ok, 2000);
                         });
                     }
 
                     this.instance.instanceStatus = Instance.STATUS_SLEEPING;
                     this.instance.println("INFO", $t("on_demand.instanceSleeping"));
-                    // 启动 socket 服务器
+                    // create socket server
                     this.socketServer = this.startSocketServer(port);
-                    // 等待 socket 服务器关闭
+                    // waiting for player connect then close socket server
                     await new Promise<void>((ok, reject) => {
                         this.socketServer.on('close', () => {
                             ok();
@@ -90,11 +94,11 @@ export class OnDemandRunner {
     }
 
     private startSocketServer(port: number) {
-        // 启动一个 socket 服务器，用于接收请求
+        // start a socket server to listen on port
         const net = require('net');
         const server = net.createServer();
         server.on('connection', (socket: any) => {
-            // 关闭 socket 服务器
+            // close socket after connect
             socket.end();
             this.socketServer.close();
         });
