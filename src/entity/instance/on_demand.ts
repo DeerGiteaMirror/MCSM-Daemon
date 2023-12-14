@@ -1,19 +1,22 @@
 import Instance from "./instance";
 import logger from "../../service/log";
 import { $t } from "../../i18n";
+import { getProcessListeningTcpPort } from "../../common/net_tools"
+import { NetworkPort } from "../../common/net_tools"
 
 export class OnDemandRunner {
 
     private instance: Instance;
     private running = false;
-    private socketServer: any = null;
+    private socketServers: any[] = new Array();
     private count: number;
+    private ports: NetworkPort[];
 
     constructor(instance: Instance) {
         this.instance = instance;
     }
 
-    public async run(port: number) {
+    public async run() {
         logger.info(`${this.instance.instanceUuid} `, $t("on_demand.start"));
         this.instance.println("INFO", $t("on_demand.start"));
         this.running = true;
@@ -21,25 +24,30 @@ export class OnDemandRunner {
             try {
                 while (this.running) {
                     this.instance.execPreset("start", "OnDemandRunner");
-                    if (port <= 0 || this.instance.config.pingConfig.ip === "") {
-                        logger.warn(`${this.instance.instanceUuid} `, $t("on_demand.startInstance"));
-                        this.running = false;
-                        break;
-                    }
                     this.count = 0;
                     while (this.running) {
                         // waiting for 1 min
                         await new Promise<void>((ok) => {
                             setTimeout(ok, 1000 * 60);
                         });
-                        // check if player online
-                        const playerCount = this.instance.info.currentPlayers;
-                        if (playerCount > 0) {
+                        // check if network is actived
+                        this.ports = getProcessListeningTcpPort(this.instance.process.pid);
+                        var established = false;
+                        // if no tcp port is established, guess the instance is udp or other process
+                        // consider it is established so that the instance will not be stopped
+                        if (this.ports.length === 0) established = true;
+                        for (const port of this.ports) {
+                            if (port.established) {
+                                established = true;
+                                break;
+                            }
+                        }
+                        if (established) {
                             this.count = 0;
                             continue;
                         }
                         this.count++;
-                        if (this.count >= 30) {
+                        if (this.count >= 1) {
                             break;
                         }
                     }
@@ -54,27 +62,35 @@ export class OnDemandRunner {
                     // waiting for instance stop
                     while (this.instance.instanceStatus !== Instance.STATUS_STOP) {
                         // if stop faild and instance returning to running status try to kill it
+                        await new Promise<void>((ok) => {
+                            setTimeout(ok, 2000);
+                        });
                         if (this.instance.instanceStatus === Instance.STATUS_RUNNING) {
                             await this.instance.execPreset("kill", "OnDemandRunner");
                         }
-                        await new Promise<void>((ok) => {
-                            setTimeout(ok, 2000);
-                        });
                     }
-
                     this.instance.instanceStatus = Instance.STATUS_SLEEPING;
                     this.instance.println("INFO", $t("on_demand.instanceSleeping"));
                     // create socket server
-                    this.socketServer = this.startSocketServer(port);
-                    // waiting for player connect then close socket server
-                    while (this.socketServer.listening) {
-                        await new Promise<void>((ok) => {
-                            setTimeout(ok, 2000);
-                        });
+                    for (const port of this.ports) {
+                        const socketServer = this.startSocketServer(port.port);
+                        this.socketServers.push(socketServer);
                     }
+                    // if any one socket server has a connection, close all socket servers and start instance
+                    await new Promise<void>((ok) => {
+                        for (const socketServer of this.socketServers) {
+                            socketServer.on("connection", (socket: any) => {
+                                for (const socketServer of this.socketServers) {
+                                    socketServer.close();
+                                }
+                                ok();
+                            });
+                        }
+                    });
                     logger.info(`${this.instance.instanceUuid} `, $t("on_demand.playerConnected"));
                     this.instance.println("INFO", $t("on_demand.playerConnected"));
-                    this.socketServer = null;
+                    // clear socket servers
+                    this.socketServers = new Array();
                 }
                 resolve();
             } catch (error) {
@@ -85,8 +101,10 @@ export class OnDemandRunner {
 
     public stop() {
         this.running = false;
-        if (this.socketServer) {
-            this.socketServer.close();
+        if (this.socketServers.length > 0) {
+            for (const socketServer of this.socketServers) {
+                socketServer.close();
+            }
         }
         if (this.instance.instanceStatus === Instance.STATUS_RUNNING) {
             this.instance.execPreset("stop", "OnDemandRunner");
@@ -100,11 +118,6 @@ export class OnDemandRunner {
         // start a socket server to listen on port
         const net = require('net');
         const server = net.createServer();
-        server.on('connection', (socket: any) => {
-            // close socket after connect
-            socket.end();
-            this.socketServer.close();
-        });
         server.listen(port, () => {
             logger.info(`${this.instance.instanceUuid} Socket server is listening on port ${port}`);
         });

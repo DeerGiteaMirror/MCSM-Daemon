@@ -328,7 +328,7 @@ export default class Instance extends EventEmitter {
 
   async runOnDemand(source = "Unknown") {
     this.onDemandRunner = new OnDemandRunner(this);
-    this.onDemandRunner.run(this.getMinecraftPort());
+    this.onDemandRunner.run();
   }
 
   async stopOnDemand() {;
@@ -338,20 +338,5 @@ export default class Instance extends EventEmitter {
     }
     this.onDemandRunner.stop();
     this.onDemandRunner = null;
-  }
-
-  // get minecraft server port from server.properties
-  getMinecraftPort() {
-    const portFile = path.join(this.absoluteCwdPath(), "server.properties");
-    const portFileContent = fs.readFileSync(portFile, "utf-8");
-    if (!portFileContent) return 0;
-    const port = portFileContent.match(/server-port=(\d+)/)?.[1];
-    if (port) {
-      this.config.pingConfig.port = Number(port);
-      this.config.pingConfig.ip = "localhost";
-      StorageSubsystem.store("InstanceConfig", this.instanceUuid, this.config);
-      return Number(port);
-    }
-    return 0;
   }
 }
