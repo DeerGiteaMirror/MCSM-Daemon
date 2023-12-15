@@ -24,6 +24,10 @@ export class OnDemandRunner {
             try {
                 while (this.running) {
                     this.instance.execPreset("start", "OnDemandRunner");
+                    // waiting for 5 min before fitsrt check
+                    await new Promise<void>((ok) => {
+                        setTimeout(ok, 1000 * 60 * 5);
+                    });
                     this.count = 0;
                     while (this.running) {
                         // waiting for 1 min
