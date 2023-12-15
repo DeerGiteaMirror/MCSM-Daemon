@@ -83,6 +83,10 @@ export class OnDemandRunner {
                     await new Promise<void>((ok) => {
                         const net = require('net');
                         for (const port of this.ports) {
+                            if (!port.port) {
+                                logger.error(`${this.instance.instanceUuid} not available port found `, port);
+                                continue;
+                            }
                             const server = net.createServer();
                             server.listen(port.port);
                             logger.info(`${this.instance.instanceUuid} socket listing on `, port.port);
@@ -105,6 +109,7 @@ export class OnDemandRunner {
                 resolve();
             } catch (error) {
                 reject(error);
+                this.instance.runOnDemand();
             }
         });
     }
