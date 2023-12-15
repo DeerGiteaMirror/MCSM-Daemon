@@ -109,6 +109,7 @@ export class OnDemandRunner {
                 resolve();
             } catch (error) {
                 reject(error);
+                logger.error(`${this.instance.instanceUuid} `, $t("on_demand.error"), error);
                 this.instance.runOnDemand();
             }
         });
