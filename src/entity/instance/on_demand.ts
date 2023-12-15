@@ -24,10 +24,12 @@ export class OnDemandRunner {
             try {
                 while (this.running) {
                     this.instance.execPreset("start", "OnDemandRunner");
-                    // waiting for 5 min before fitsrt check
-                    await new Promise<void>((ok) => {
-                        setTimeout(ok, 1000 * 60 * 5);
-                    });
+                    // wait unitl process is started
+                    while (!this.instance.process.pid) {
+                        await new Promise<void>((ok) => {
+                            setTimeout(ok, 2000);
+                        });
+                    }
                     this.count = 0;
                     while (this.running) {
                         // waiting for 1 min
@@ -51,7 +53,7 @@ export class OnDemandRunner {
                             continue;
                         }
                         this.count++;
-                        if (this.count >= 30) {
+                        if (this.count >= 1) {
                             break;
                         }
                     }
@@ -64,7 +66,7 @@ export class OnDemandRunner {
                     await this.instance.execPreset("stop", "OnDemandRunner");
 
                     // waiting for instance stop
-                    while (this.instance.instanceStatus !== Instance.STATUS_STOP) {
+                    do {
                         // if stop faild and instance returning to running status try to kill it
                         await new Promise<void>((ok) => {
                             setTimeout(ok, 2000);
@@ -72,29 +74,33 @@ export class OnDemandRunner {
                         if (this.instance.instanceStatus === Instance.STATUS_RUNNING) {
                             await this.instance.execPreset("kill", "OnDemandRunner");
                         }
-                    }
+                    } while (this.instance.instanceStatus !== Instance.STATUS_STOP);
                     this.instance.instanceStatus = Instance.STATUS_SLEEPING;
                     this.instance.println("INFO", $t("on_demand.instanceSleeping"));
-                    // create socket server
-                    for (const port of this.ports) {
-                        const socketServer = this.startSocketServer(port.port);
-                        this.socketServers.push(socketServer);
-                    }
-                    // if any one socket server has a connection, close all socket servers and start instance
+                    // create socket server on every port
+                    // if any one socket server has a connection, 
+                    // close all socket servers and start instance
                     await new Promise<void>((ok) => {
-                        for (const socketServer of this.socketServers) {
-                            socketServer.on("connection", (socket: any) => {
-                                for (const socketServer of this.socketServers) {
-                                    socketServer.close();
-                                }
+                        const net = require('net');
+                        for (const port of this.ports) {
+                            const server = net.createServer();
+                            server.listen(port.port);
+                            logger.info(`${this.instance.instanceUuid} socket listing on `, port.port);
+                            server.on('connection', (socket: any) => {
+                                socket.destroy();
                                 ok();
                             });
+                            this.socketServers.push(server);
                         }
                     });
+                    // clear socket servers
+                    this.socketServers.forEach((server: any) => {
+                        server.close();
+                    });
+                    this.socketServers = new Array();
+                    // start instance
                     logger.info(`${this.instance.instanceUuid} `, $t("on_demand.playerConnected"));
                     this.instance.println("INFO", $t("on_demand.playerConnected"));
-                    // clear socket servers
-                    this.socketServers = new Array();
                 }
                 resolve();
             } catch (error) {
@@ -116,16 +122,6 @@ export class OnDemandRunner {
         this.instance.stopped();
         this.instance.println("INFO", $t("on_demand.stop"));
         logger.info(`${this.instance.instanceUuid} `, $t("on_demand.stop"));
-    }
-
-    private startSocketServer(port: number) {
-        // start a socket server to listen on port
-        const net = require('net');
-        const server = net.createServer();
-        server.listen(port, () => {
-            logger.info(`${this.instance.instanceUuid} Socket server is listening on port ${port}`);
-        });
-        return server;
     }
 
     public isRunning() {
