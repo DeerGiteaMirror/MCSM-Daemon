@@ -47,7 +47,7 @@ export class OnDemandRunner {
                             continue;
                         }
                         this.count++;
-                        if (this.count >= 1) {
+                        if (this.count >= 30) {
                             break;
                         }
                     }
