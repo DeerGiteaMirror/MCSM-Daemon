@@ -25,7 +25,7 @@ export class OnDemandRunner {
                 while (this.running) {
                     this.instance.execPreset("start", "OnDemandRunner");
                     // wait unitl process is started
-                    while (!this.instance.process.pid) {
+                    while (!this.instance.process || !this.instance.process.pid) {
                         await new Promise<void>((ok) => {
                             setTimeout(ok, 2000);
                         });
