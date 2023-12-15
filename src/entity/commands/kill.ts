@@ -13,6 +13,9 @@ export default class KillCommand extends InstanceCommand {
     if (instance.config.eventTask && instance.config.eventTask.autoRestart) instance.config.eventTask.ignore = true;
 
     // send stop command
+    if (instance.isRunningOnDemand()) {
+      instance.stopOnDemand();
+    }
     return await instance.execPreset("kill");
   }
 }

@@ -2,6 +2,7 @@
 import { ChildProcess, exec, execSync, SpawnOptionsWithoutStdio } from "child_process";
 import os from "os";
 import logger from "../service/log";
+import { log } from "console";
 
 export class NetworkPort {
     static readonly PROTO_TCP = "tcp";
@@ -46,6 +47,7 @@ export function getProcessListeningTcpPort(pid: number | string): NetworkPort[] 
             }
         }
     } catch (err) {
+        logger.error(err);
         return result;
     }
 }
@@ -56,9 +58,10 @@ function portEstablishedWin32(ports: NetworkPort[]): NetworkPort[] {
         const lines = out.split("\n");
         for (const line of lines) {
             const line_arr = line.split(/\s+/);
-            if (line_arr[0].startsWith("TCP") && 
-                line_arr[1].split(":")[1] === port.port.toString() &&
-                line_arr[3] === NetworkPort.STATE_ESTABLISHED) {
+            if (line_arr.length < 5) continue;  // windows may have empty line F**K windows
+            if (line_arr[1].startsWith("TCP") &&
+                line_arr[2].split(":")[1] === port.port.toString() &&
+                line_arr[4] === NetworkPort.STATE_ESTABLISHED) {
                 port.established = true;
                 break;
             }
@@ -73,7 +76,7 @@ function portEstablishedLinux(ports: NetworkPort[]): NetworkPort[] {
         const lines = out.split("\n");
         for (const line of lines) {
             const line_arr = line.split(/\s+/);
-            if (line_arr[0].startsWith("tcp") && 
+            if (line_arr[0].startsWith("tcp") &&
                 line_arr[3].split(":")[1] === port.port.toString() &&
                 line_arr[5] === NetworkPort.STATE_ESTABLISHED) {
                 port.established = true;
@@ -90,7 +93,7 @@ function portEstablishedDarwin(ports: NetworkPort[]): NetworkPort[] {
         const lines = out.split("\n");
         for (const line of lines) {
             const line_arr = line.split(/\s+/);
-            if (line_arr[0].startsWith("tcp") && 
+            if (line_arr[0].startsWith("tcp") &&
                 line_arr[3].split(".").pop() === port.port.toString() &&
                 line_arr[5] === NetworkPort.STATE_ESTABLISHED) {
                 port.established = true;
@@ -105,16 +108,19 @@ function getListenTcpPortWin32(pid: number): NetworkPort[] {
     const result: NetworkPort[] = [];
     const output = execSync(`netstat -ano | findstr ${pid}`).toString();
     const lines = output.split("\n");
-    // TCP
-    //   Proto  Local Address          Foreign Address        State           PID
+    // TCP    0.0.0.0:25565          0.0.0.0:0              LISTENING       3716
+    // TCP    [::]:25565             [::]:0                 LISTENING       3716
     for (const line of lines) {
         const line_arr = line.split(/\s+/);
+        if (line_arr.length < 5) continue;  // windows may have empty line F**K windows
         const port = new NetworkPort();
-        if (line_arr[0].startsWith("TCP")) {
+        if (line_arr[1].startsWith("TCP")) {
             port.protocol = NetworkPort.PROTO_TCP;
             port.pid = pid;
             port.port = parseInt(line_arr[2].split(":")[1]);
-            port.state = line_arr[3];
+            // if get port failed, skip this line
+            if (isNaN(port.port)) continue;
+            port.state = line_arr[4];
             result.push(port);
         }
     }
@@ -145,6 +151,8 @@ function getLinstenTcpPortLinux(pid: number): NetworkPort[] {
             port.protocol = NetworkPort.PROTO_TCP;
             port.pid = pid;
             port.port = parseInt(line_arr[3].split(":")[1]);
+            // if get port failed, skip this line
+            if (isNaN(port.port)) continue;
             port.state = NetworkPort.STATE_LISTEN
             result.push(port);
         }
@@ -168,6 +176,8 @@ function getLinstenTcpPortDarwin(pid: number): NetworkPort[] {
             port.protocol = NetworkPort.PROTO_TCP;
             port.pid = pid;
             port.port = parseInt(line_arr[3].split(".").pop());
+            // if get port failed, skip this line
+            if (isNaN(port.port)) continue;
             port.state = NetworkPort.STATE_LISTEN
             result.push(port);
         }
@@ -187,6 +197,8 @@ function getLinstenTcpPortDocker(pid: string): NetworkPort[] {
         port.protocol = NetworkPort.PROTO_TCP;
         port.pid = pid;
         port.port = parseInt(line_arr[0].split("/")[0]);
+        // if get port failed, skip this line
+        if (isNaN(port.port)) continue;
         port.state = NetworkPort.STATE_LISTEN
         result.push(port);
     }
