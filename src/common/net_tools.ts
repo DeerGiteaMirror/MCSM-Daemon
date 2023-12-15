@@ -56,7 +56,9 @@ function portEstablishedWin32(ports: NetworkPort[]): NetworkPort[] {
         const lines = out.split("\n");
         for (const line of lines) {
             const line_arr = line.split(/\s+/);
-            if (line_arr[0].startsWith("TCP") && line_arr[3] === NetworkPort.STATE_ESTABLISHED) {
+            if (line_arr[0].startsWith("TCP") && 
+                line_arr[1].split(":")[1] === port.port.toString() &&
+                line_arr[3] === NetworkPort.STATE_ESTABLISHED) {
                 port.established = true;
                 break;
             }
@@ -71,7 +73,9 @@ function portEstablishedLinux(ports: NetworkPort[]): NetworkPort[] {
         const lines = out.split("\n");
         for (const line of lines) {
             const line_arr = line.split(/\s+/);
-            if (line_arr[0].startsWith("tcp") && line_arr[5] === NetworkPort.STATE_ESTABLISHED) {
+            if (line_arr[0].startsWith("tcp") && 
+                line_arr[3].split(":")[1] === port.port.toString() &&
+                line_arr[5] === NetworkPort.STATE_ESTABLISHED) {
                 port.established = true;
                 break;
             }
@@ -86,7 +90,9 @@ function portEstablishedDarwin(ports: NetworkPort[]): NetworkPort[] {
         const lines = out.split("\n");
         for (const line of lines) {
             const line_arr = line.split(/\s+/);
-            if (line_arr[0].startsWith("tcp") && line_arr[5] === NetworkPort.STATE_ESTABLISHED) {
+            if (line_arr[0].startsWith("tcp") && 
+                line_arr[3].split(".").pop() === port.port.toString() &&
+                line_arr[5] === NetworkPort.STATE_ESTABLISHED) {
                 port.established = true;
                 break;
             }
