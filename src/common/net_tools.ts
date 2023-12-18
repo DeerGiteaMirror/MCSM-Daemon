@@ -117,7 +117,7 @@ function getListenTcpPortWin32(pid: number): NetworkPort[] {
         if (line_arr[1].startsWith("TCP")) {
             port.protocol = NetworkPort.PROTO_TCP;
             port.pid = pid;
-            port.port = parseInt(line_arr[2].split(":")[1]);
+            port.port = parseInt(line_arr[2].split(":").pop());
             // if get port failed, skip this line
             if (isNaN(port.port)) continue;
             port.state = line_arr[4];
@@ -150,7 +150,7 @@ function getLinstenTcpPortLinux(pid: number): NetworkPort[] {
         if (line_arr[0].startsWith("tcp") && line_arr[5] === NetworkPort.STATE_LISTEN) {
             port.protocol = NetworkPort.PROTO_TCP;
             port.pid = pid;
-            port.port = parseInt(line_arr[3].split(":")[1]);
+            port.port = parseInt(line_arr[3].split(":").pop());
             // if get port failed, skip this line
             if (isNaN(port.port)) continue;
             port.state = NetworkPort.STATE_LISTEN
